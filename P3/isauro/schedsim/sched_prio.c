@@ -1,15 +1,11 @@
 #include "sched.h"
 
-struct prio_data {
-	int priority;
-};
-
 //Compares tasks by their priority
 static int compare_tasks_priority(void *t1,void *t2)
 {
 	task_t* tsk1=(task_t*)t1;
 	task_t* tsk2=(task_t*)t2;
-	return tsk2->prio-tsk1->prio;
+	return tsk1->prio-tsk2->prio;
 }
 
 static task_t* pick_next_task_prio(runqueue_t* rq,int cpu)
@@ -62,44 +58,8 @@ static task_t* steal_task_prio(runqueue_t* rq,int cpu)
 	return t;
 }
 
-static int task_new_prio(task_t* t)
-{
-	struct prio_data* cs_data=malloc(sizeof(struct prio_data));
-
-	if (!cs_data)
-		return 1;  /* Cannot reserve memory */
-	
-	cs_data->priority=t->prio;
-	t->tcs_data=cs_data;
-	return 0;
-}
-
-static void task_free_prio(task_t* t)
-{
-	if (t->tcs_data) {
-		free(t->tcs_data);
-		t->tcs_data=NULL;
-	}
-}
-
-static void task_tick_prio(runqueue_t* rq,int cpu)
-{
-	task_t* current=rq->cur_task;
-	struct prio_data* cs_data=(struct prio_data*) current->tcs_data;
-
-	if (is_idle_task(current))
-		return;
-
-	if (cs_data->priority>current->prio)
-		rq->need_resched=TRUE;
-}
-
 sched_class_t prio_sched= {
 	.pick_next_task=pick_next_task_prio,
 	.enqueue_task=enqueue_task_prio,
 	.steal_task=steal_task_prio,
-	.task_new=task_new_prio,
-	.task_tick=task_tick_prio,
-	.task_free=task_free_prio
 };
-
